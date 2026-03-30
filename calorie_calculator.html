@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>每日消耗热量计算器</title>
+<style>
+  :root {
+    --primary: #ff6b35;
+    --primary-light: #ff8c5a;
+    --primary-dark: #e85520;
+    --bg: #f7f8fc;
+    --card: #ffffff;
+    --text: #2d3142;
+    --muted: #8a8fa8;
+    --border: #e4e7f0;
+    --green: #27ae60;
+    --blue: #2980b9;
+    --red: #e74c3c;
+    --shadow: 0 4px 24px rgba(0,0,0,.08);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header .icon { font-size: 48px; line-height: 1; margin-bottom: 8px; }
+  header h1 { font-size: 24px; font-weight: 700; }
+  header p  { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ── Layout ── */
+  .container { max-width: 860px; margin: 0 auto; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Card ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title span { font-size: 18px; }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type=number], select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color .2s;
+    outline: none;
+    appearance: none;
+  }
+  input[type=number]:focus, select:focus {
+    border-color: var(--primary);
+    background: #fff;
+  }
+
+  /* Gender toggle */
+  .gender-group { display: flex; gap: 10px; }
+  .gender-btn {
+    flex: 1;
+    padding: 11px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: 15px;
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+    font-weight: 500;
+  }
+  .gender-btn.active {
+    border-color: var(--primary);
+    background: #fff3ef;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  /* Activity cards */
+  .activity-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 600px) { .activity-grid { grid-template-columns: repeat(3, 1fr); } }
+  .activity-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg);
+    transition: all .2s;
+  }
+  .activity-card:hover { border-color: var(--primary-light); }
+  .activity-card.active {
+    border-color: var(--primary);
+    background: #fff3ef;
+  }
+  .activity-card .lv-icon { font-size: 22px; margin-bottom: 4px; }
+  .activity-card .lv-label { font-size: 11px; color: var(--muted); line-height: 1.3; }
+  .activity-card.active .lv-label { color: var(--primary); font-weight: 600; }
+
+  /* Exercise table */
+  .exercise-list { display: flex; flex-direction: column; gap: 10px; }
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .exercise-row select { flex: 1; margin: 0; }
+  .exercise-row input  { width: 90px; margin: 0; }
+  .exercise-row .ex-cal {
+    min-width: 72px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .btn-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: color .2s;
+    line-height: 1;
+  }
+  .btn-del:hover { color: var(--red); }
+  .btn-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px;
+    background: none;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 4px;
+  }
+  .btn-add:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* Calculate button */
+  .btn-calc {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .04em;
+    box-shadow: 0 6px 20px rgba(255,107,53,.35);
+    transition: transform .15s, box-shadow .15s;
+    margin-top: 8px;
+  }
+  .btn-calc:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(255,107,53,.45);
+  }
+  .btn-calc:active { transform: translateY(0); }
+
+  /* ── Result Panel ── */
+  #result-panel { display: none; }
+  #result-panel.show { display: block; }
+
+  .result-hero {
+    background: linear-gradient(135deg, #ff6b35, #ff3d00);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    text-align: center;
+    color: #fff;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(255,107,53,.4);
+  }
+  .result-hero .hero-label { font-size: 14px; opacity: .85; margin-bottom: 6px; }
+  .result-hero .hero-value { font-size: 56px; font-weight: 800; line-height: 1; }
+  .result-hero .hero-unit  { font-size: 18px; opacity: .8; margin-top: 4px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+  .stat-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px 14px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .stat-icon  { font-size: 26px; margin-bottom: 6px; }
+  .stat-card .stat-value { font-size: 22px; font-weight: 800; color: var(--text); }
+  .stat-card .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Bar chart */
+  .bar-section { margin-bottom: 8px; }
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+  .bar-label .bl-name  { font-weight: 600; }
+  .bar-label .bl-value { color: var(--muted); }
+  .bar-track {
+    background: var(--border);
+    border-radius: 99px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width .8s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Exercise detail */
+  .ex-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .ex-detail-row:last-child { border-bottom: none; }
+  .ex-detail-row .ex-name { font-weight: 500; }
+  .ex-detail-row .ex-val  { font-weight: 700; color: var(--primary); }
+
+  /* Diet suggestion */
+  .diet-tag {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 4px 0 0;
+  }
+  .tag-green { background: #e8f8f0; color: var(--green); }
+  .tag-blue  { background: #e8f4fd; color: var(--blue); }
+  .tag-red   { background: #fdecea; color: var(--red); }
+
+  /* Error */
+  .error-msg {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 6px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="icon">🔥</div>
+    <h1>每日消耗热量计算器</h1>
+    <p>基于 Harris-Benedict 公式 · MET 运动代谢当量</p>
+  </header>
+
+  <!-- ① 基本信息 -->
+  <div class="card">
+    <div class="card-title"><span>👤</span> 基本信息</div>
+    <div class="form-group">
+      <label>性别</label>
+      <div class="gender-group">
+        <div class="gender-btn active" id="btn-male" onclick="setGender('male')">♂ 男</div>
+        <div class="gender-btn"        id="btn-female" onclick="setGender('female')">♀ 女</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>年龄（岁）</label>
+        <input type="number" id="age" value="25" min="10" max="120" />
+      </div>
+      <div class="form-group">
+        <label>体重（kg）</label>
+        <input type="number" id="weight" value="65" min="20" max="300" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>身高（cm）</label>
+        <input type="number" id="height" value="170" min="100" max="250" />
+      </div>
+      <div class="form-group">
+        <label>目标体重（kg，可选）</label>
+        <input type="number" id="target-weight" placeholder="不填则不显示建议" min="20" max="300" step="0.1" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 活动等级 -->
+  <div class="card">
+    <div class="card-title"><span>🏃</span> 日常活动等级</div>
+    <div class="activity-grid">
+      <div class="activity-card" id="lv1" onclick="setActivity(1)">
+        <div class="lv-icon">🛋️</div>
+        <div class="lv-label">久坐<br/>不运动</div>
+      </div>
+      <div class="activity-card" id="lv2" onclick="setActivity(2)">
+        <div class="lv-icon">🚶</div>
+        <div class="lv-label">轻度<br/>1-3天/周</div>
+      </div>
+      <div class="activity-card active" id="lv3" onclick="setActivity(3)">
+        <div class="lv-icon">🚴</div>
+        <div class="lv-label">中度<br/>3-5天/周</div>
+      </div>
+      <div class="activity-card" id="lv4" onclick="setActivity(4)">
+        <div class="lv-icon">🏋️</div>
+        <div class="lv-label">高度<br/>6-7天/周</div>
+      </div>
+      <div class="activity-card" id="lv5" onclick="setActivity(5)">
+        <div class="lv-icon">⚡</div>
+        <div class="lv-label">极高<br/>体力劳动</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 今日运动 -->
+  <div class="card">
+    <div class="card-title"><span>💪</span> 今日额外运动（可选）</div>
+    <div class="exercise-list" id="exercise-list"></div>
+    <button class="btn-add" onclick="addExerciseRow()">＋ 添加运动</button>
+  </div>
+
+  <!-- 计算按钮 -->
+  <button class="btn-calc" onclick="calculate()">🔥 立即计算</button>
+  <p class="error-msg" id="error-msg"></p>
+
+  <!-- ④ 结果面板 -->
+  <div id="result-panel">
+
+    <!-- Hero -->
+    <div class="result-hero">
+      <div class="hero-label">全天总消耗热量</div>
+      <div class="hero-value" id="r-total">—</div>
+      <div class="hero-unit">千卡（kcal）</div>
+    </div>
+
+    <!-- 三格统计 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🫀</div>
+        <div class="stat-value" id="r-bmr">—</div>
+        <div class="stat-label">基础代谢 BMR</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌞</div>
+        <div class="stat-value" id="r-tdee">—</div>
+        <div class="stat-label">日常总消耗 TDEE</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏃</div>
+        <div class="stat-value" id="r-exercise">—</div>
+        <div class="stat-label">额外运动消耗</div>
+      </div>
+    </div>
+
+    <!-- 热量构成 -->
+    <div class="card">
+      <div class="card-title"><span>📊</span> 热量构成</div>
+      <div id="bar-container"></div>
+    </div>
+
+    <!-- 运动明细 -->
+    <div class="card" id="exercise-detail-card" style="display:none">
+      <div class="card-title"><span>🏅</span> 运动明细</div>
+      <div id="exercise-detail-list"></div>
+    </div>
+
+    <!-- 饮食建议 -->
+    <div class="card">
+      <div class="card-title"><span>🥗</span> 饮食参考建议</div>
+      <div id="diet-suggest"></div>
+    </div>
+
+  </div><!-- /result-panel -->
+
+</div><!-- /container -->
+
+<script>
+// ─────────────────────────────────────
+// 数据
+// ─────────────────────────────────────
+let selectedGender   = 'male';
+let selectedActivity = 3;
+
+const ACTIVITY_FACTORS = [null, 1.2, 1.375, 1.55, 1.725, 1.9];
+const ACTIVITY_NAMES   = [null,'久坐','轻度活动','中度活动','高度活动','极高强度'];
+
+const EXERCISE_MET = {
+  '跑步（8 km/h）':     8.3,
+  '跑步（10 km/h）':    10.5,
+  '跑步（12 km/h）':    11.5,
+  '快走（6 km/h）':     4.3,
+  '骑行（中等强度）':    8.0,
+  '游泳（自由泳）':      10.0,
+  '跳绳':               11.0,
+  '瑜伽':               2.5,
+  '力量训练（中等强度）': 5.0,
+  '力量训练（高强度）':   6.0,
+  '篮球':               6.5,
+  '足球':               7.0,
+  '羽毛球':             5.5,
+};
+
+// ─────────────────────────────────────
+// UI 交互
+// ─────────────────────────────────────
+function setGender(g) {
+  selectedGender = g;
+  document.getElementById('btn-male').classList.toggle('active',   g === 'male');
+  document.getElementById('btn-female').classList.toggle('active', g === 'female');
+}
+
+function setActivity(lv) {
+  selectedActivity = lv;
+  for (let i = 1; i <= 5; i++)
+    document.getElementById('lv'+i).classList.toggle('active', i === lv);
+}
+
+let exerciseCount = 0;
+
+function addExerciseRow() {
+  exerciseCount++;
+  const id = 'ex-' + exerciseCount;
+  const list = document.getElementById('exercise-list');
+  const div = document.createElement('div');
+  div.className = 'exercise-row';
+  div.id = id;
+
+  const sel = document.createElement('select');
+  Object.keys(EXERCISE_MET).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', updateRowCal.bind(null, id));
+
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = 1; inp.max = 600; inp.value = 30;
+  inp.placeholder = '分钟';
+  inp.addEventListener('input', updateRowCal.bind(null, id));
+
+  const cal = document.createElement('div');
+  cal.className = 'ex-cal'; cal.id = id + '-cal';
+
+  const del = document.createElement('button');
+  del.className = 'btn-del'; del.textContent = '✕';
+  del.onclick = () => div.remove();
+
+  div.append(sel, inp, cal, del);
+  list.appendChild(div);
+  updateRowCal(id);
+}
+
+function updateRowCal(id) {
+  const row  = document.getElementById(id);
+  if (!row) return;
+  const sel  = row.querySelector('select');
+  const inp  = row.querySelector('input');
+  const calEl = document.getElementById(id + '-cal');
+  const weight = parseFloat(document.getElementById('weight').value) || 65;
+  const met  = EXERCISE_MET[sel.value] || 0;
+  const min  = parseFloat(inp.value)   || 0;
+  const kcal = +(met * weight * (min / 60)).toFixed(1);
+  calEl.textContent = kcal + ' kcal';
+}
+
+// 体重变化时刷新所有运动行热量
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('weight').addEventListener('input', () => {
+    document.querySelectorAll('.exercise-row').forEach(row => updateRowCal(row.id));
+  });
+});
+
+// ─────────────────────────────────────
+// 核心计算
+// ─────────────────────────────────────
+function calcBMR(weight, height, age, gender) {
+  return gender === 'male'
+    ? 88.362 + 13.397*weight + 4.799*height - 5.677*age
+    : 447.593 + 9.247*weight + 3.098*height - 4.330*age;
+}
+
+function calculate() {
+  const weight = parseFloat(document.getElementById('weight').value);
+  const height = parseFloat(document.getElementById('height').value);
+  const age    = parseInt(document.getElementById('age').value);
+  const errEl  = document.getElementById('error-msg');
+
+  // 基本验证
+  if (!weight || !height || !age || weight < 20 || height < 100 || age < 5) {
+    errEl.textContent = '⚠ 请检查输入数据是否合理（体重≥20kg，身高≥100cm，年龄≥5岁）';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const bmr  = +calcBMR(weight, height, age, selectedGender).toFixed(1);
+  const tdee = +(bmr * ACTIVITY_FACTORS[selectedActivity]).toFixed(1);
+
+  // 收集运动
+  let exerciseTotal = 0;
+  const exerciseDetails = [];
+  document.querySelectorAll('.exercise-row').forEach(row => {
+    const name = row.querySelector('select').value;
+    const min  = parseFloat(row.querySelector('input').value) || 0;
+    const kcal = +(EXERCISE_MET[name] * weight * (min / 60)).toFixed(1);
+    exerciseTotal += kcal;
+    exerciseDetails.push({ name, min, kcal });
+  });
+  exerciseTotal = +exerciseTotal.toFixed(1);
+
+  const total = +(tdee + exerciseTotal).toFixed(1);
+
+  // 渲染
+  document.getElementById('r-bmr').textContent      = bmr.toLocaleString();
+  document.getElementById('r-tdee').textContent     = tdee.toLocaleString();
+  document.getElementById('r-exercise').textContent = exerciseTotal.toLocaleString();
+  document.getElementById('r-total').textContent    = total.toLocaleString();
+
+  renderBars(bmr, tdee, exerciseTotal, total);
+  renderExerciseDetail(exerciseDetails);
+  renderDietSuggestion(total, weight, height, age);
+
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('show');
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+
+// ─────────────────────────────────────
+// 渲染：热量构成条形图
+// ─────────────────────────────────────
+const BAR_COLORS = ['#ff6b35','#2980b9','#27ae60'];
+function renderBars(bmr, tdee, exercise, total) {
+  const items = [
+    { label:'基础代谢 BMR',   value: bmr,      color: BAR_COLORS[0] },
+    { label:'日常活动消耗',   value: +(tdee-bmr).toFixed(1), color: BAR_COLORS[1] },
+  ];
+  if (exercise > 0)
+    items.push({ label:'额外运动消耗', value: exercise, color: BAR_COLORS[2] });
+
+  const container = document.getElementById('bar-container');
+  container.innerHTML = '';
+  items.forEach(item => {
+    const pct = total > 0 ? Math.round(item.value / total * 100) : 0;
+    container.innerHTML += `
+      <div class="bar-section">
+        <div class="bar-label">
+          <span class="bl-name">${item.label}</span>
+          <span class="bl-value">${item.value.toLocaleString()} kcal &nbsp;(${pct}%)</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:0%;background:${item.color}" data-w="${pct}%"></div>
+        </div>
+      </div>`;
+  });
+  // 动画
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bar-fill').forEach(el => {
+      el.style.width = el.dataset.w;
+    });
+  });
+}
+
+// ─────────────────────────────────────
+// 渲染：运动明细
+// ─────────────────────────────────────
+function renderExerciseDetail(details) {
+  const card = document.getElementById('exercise-detail-card');
+  const list = document.getElementById('exercise-detail-list');
+  if (!details.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = details.map(d => `
+    <div class="ex-detail-row">
+      <span class="ex-name">🏅 ${d.name}</span>
+      <span>${d.min} 分钟 &nbsp;→&nbsp; <span class="ex-val">${d.kcal} kcal</span></span>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────
+// 渲染：饮食建议
+// ─────────────────────────────────────
+function renderDietSuggestion(total, weight, height, age) {
+  const targetW = parseFloat(document.getElementById('target-weight').value);
+  const bmi = +(weight / ((height/100) ** 2)).toFixed(1);
+  const suggest = document.getElementById('diet-suggest');
+
+  let bmiTag = '';
+  if      (bmi < 18.5) bmiTag = `<span class="diet-tag tag-blue">偏瘦 BMI ${bmi}</span>`;
+  else if (bmi < 24)   bmiTag = `<span class="diet-tag tag-green">正常 BMI ${bmi}</span>`;
+  else if (bmi < 28)   bmiTag = `<span class="diet-tag tag-red">偏重 BMI ${bmi}</span>`;
+  else                 bmiTag = `<span class="diet-tag tag-red">肥胖 BMI ${bmi}</span>`;
+
+  // 蛋白质推荐
+  const protein = Math.round(weight * 1.6);
+  // 减脂/增肌建议摄入
+  let dietLine = '';
+  if (targetW && targetW < weight) {
+    const deficitCal = +(total * 0.8).toFixed(0);
+    dietLine = `<p style="margin-top:12px;font-size:14px;line-height:1.7">
+      🎯 减重目标：<strong>${targetW} kg</strong>，建议每日摄入约
+      <strong>${deficitCal.toLocaleString()} kcal</strong>（减少约 ${(total-deficitCal).toLocaleString()} kcal），
+      每周可减约 <strong>${((total-deficitCal)*7/7700).toFixed(2)} kg</strong>。
+    </p>`;
+  } else if (targetW && targetW > weight) {
+    const surplusCal = +(total * 1.1).toFixed(0);
+    dietLine = `<p style="margin-top:12px;font-size:14px;line-height:1.7">
+      🎯 增重目标：<strong>${targetW} kg</strong>，建议每日摄入约
+      <strong>${surplusCal.toLocaleString()} kcal</strong>（增加约 ${(surplusCal-total).toLocaleString()} kcal）。
+    </p>`;
+  }
+
+  suggest.innerHTML = `
+    <div style="margin-bottom:10px">${bmiTag}
+      <span class="diet-tag tag-blue">蛋白质 ≥ ${protein} g/天</span>
+      <span class="diet-tag tag-green">维持体重摄入 ${total.toLocaleString()} kcal</span>
+    </div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7">
+      每日总消耗 <strong>${total.toLocaleString()} kcal</strong>，摄入与消耗持平即可维持当前体重。
+      减脂建议控制在消耗量的 <strong>80%</strong>，增肌建议超出 <strong>10%</strong>，
+      同时保持高蛋白摄入（每千克体重 ≥ 1.6 g）。
+    </p>
+    ${dietLine}
+  `;
+}
+</script>
+</body>
+</html>
